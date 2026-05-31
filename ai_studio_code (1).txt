@@ -1,0 +1,87 @@
+import { useState, useEffect } from "react";
+import HeartParticles from "./components/HeartParticles";
+import ProposalScreen from "./components/ProposalScreen";
+import CelebrationScreen from "./components/CelebrationScreen";
+import SadScreen from "./components/SadScreen";
+import { Sparkles, Heart } from "lucide-react";
+
+export default function App() {
+  const [status, setStatus] = useState<'proposal' | 'accepted' | 'sad'>('proposal');
+
+  // Check if Doroh already said yes in a past session
+  useEffect(() => {
+    try {
+      const savedStatus = localStorage.getItem("doroh_gf_proposal_accepted");
+      if (savedStatus === "true") {
+        setStatus('accepted');
+      }
+    } catch (e) {
+      // ignore security rules in sandbox environment
+    }
+  }, []);
+
+  const handleAcceptProposal = () => {
+    setStatus('accepted');
+    try {
+      localStorage.setItem("doroh_gf_proposal_accepted", "true");
+    } catch (e) {
+      // safe bypass
+    }
+  };
+
+  const handleRejectProposal = () => {
+    setStatus('sad');
+  };
+
+  const handleResetProposal = () => {
+    setStatus('proposal');
+    try {
+      localStorage.removeItem("doroh_gf_proposal_accepted");
+    } catch (e) {
+      // safe bypass
+    }
+  };
+
+  return (
+    <main className="relative w-full min-h-screen flex flex-col justify-between items-center px-4 py-8 overflow-x-hidden select-none bg-pink-50/20">
+      {/* Frosted Glass Mesh Backdrop */}
+      <div className="mesh-bg absolute inset-0 z-0"></div>
+      
+      {/* Dynamic Floating Hearts Layer */}
+      <HeartParticles />
+
+      {/* Main Container Core */}
+      <div className="w-full flex-1 flex flex-col justify-center items-center relative z-10 py-10">
+        {status === 'proposal' && (
+          <ProposalScreen onAccept={handleAcceptProposal} onReject={handleRejectProposal} />
+        )}
+        {status === 'accepted' && (
+          <CelebrationScreen />
+        )}
+        {status === 'sad' && (
+          <SadScreen onRetry={handleResetProposal} />
+        )}
+      </div>
+
+      {/* Consistent Polished Footer */}
+      <footer className="relative z-10 mt-8 text-center flex flex-col items-center gap-2">
+        <div className="flex items-center gap-1 text-xs text-rose-500 font-medium">
+          <span>Créé avec</span>
+          <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 animate-pulse" />
+          <span>spécialement pour Doroh</span>
+        </div>
+        
+        {status === 'accepted' && (
+          <button
+            id="reset-proposal-footer-btn"
+            onClick={handleResetProposal}
+            className="text-[10px] text-rose-400 hover:text-rose-600 transition-colors cursor-pointer flex items-center gap-1 px-3 py-1 bg-white/60 hover:bg-white rounded-full border border-rose-100 shadow-sm"
+          >
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            Rejouer au mini-jeu de demande 🔄
+          </button>
+        )}
+      </footer>
+    </main>
+  );
+}
