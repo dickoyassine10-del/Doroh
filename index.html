@@ -1,0 +1,424 @@
+import { useState, useEffect } from "react";
+import HeartParticles from "./components/HeartParticles";
+import ProposalScreen from "./components/ProposalScreen";
+import CelebrationScreen from "./components/CelebrationScreen";
+import SadScreen from "./components/SadScreen";
+import { Sparkles, Heart } from "lucide-react";
+
+export default function App() {
+  const [status, setStatus] = useState<'proposal' | 'accepted' | 'sad'>('proposal');
+
+  // Check if Doroh already said yes in a past session
+  useEffect(() => {
+    try {
+      const savedStatus = localStorage.getItem("doroh_gf_proposal_accepted");
+      if (savedStatus === "true") {
+        setStatus('accepted');
+      }
+    } catch (e) {
+      // ignore security rules in sandbox environment
+    }
+  }, []);
+
+  const handleAcceptProposal = () => {
+    setStatus('accepted');
+    try {
+      localStorage.setItem("doroh_gf_proposal_accepted", "true");
+    } catch (e) {
+      // safe bypass
+    }
+  };
+
+  const handleRejectProposal = () => {
+    setStatus('sad');
+  };
+
+  const handleResetProposal = () => {
+    setStatus('proposal');
+    try {
+      localStorage.removeItem("doroh_gf_proposal_accepted");
+    } catch (e) {
+      // safe bypass
+    }
+  };
+
+  return (
+    <main className="relative w-full min-h-screen flex flex-col justify-between items-center px-4 py-8 overflow-x-hidden select-none bg-pink-50/20">
+      {/* Frosted Glass Mesh Backdrop */}
+      <div className="mesh-bg absolute inset-0 z-0"></div>
+      
+      {/* Dynamic Floating Hearts Layer */}
+      <HeartParticles />
+
+      {/* Main Container Core */}
+      <div className="w-full flex-1 flex flex-col justify-center items-center relative z-10 py-10">
+        {status === 'proposal' && (
+          <ProposalScreen onAccept={handleAcceptProposal} onReject={handleRejectProposal} />
+        )}
+        {status === 'accepted' && (
+          <CelebrationScreen />
+        )}
+        {status === 'sad' && (
+          <SadScreen onRetry={handleResetProposal} />
+        )}
+      </div>
+
+      {/* Consistent Polished Footer */}
+      <footer className="relative z-10 mt-8 text-center flex flex-col items-center gap-2">
+        <div className="flex items-center gap-1 text-xs text-rose-500 font-medium">
+          <span>Créé avec</span>
+          <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 animate-pulse" />
+          <span>spécialement pour Doroh</span>
+        </div>
+        
+        {status === 'accepted' && (
+          <button
+            id="reset-proposal-footer-btn"
+            onClick={handleResetProposal}
+            className="text-[10px] text-rose-400 hover:text-rose-600 transition-colors cursor-pointer flex items-center gap-1 px-3 py-1 bg-white/60 hover:bg-white rounded-full border border-rose-100 shadow-sm"
+          >
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            Rejouer au mini-jeu de demande 🔄
+          </button>
+        )}
+      </footer>
+    </main>
+     import { Heart, Sparkles, Smile } from "lucide-react";
+
+interface ProposalScreenProps {
+  onAccept: () => void;
+  onReject: () => void;
+}
+
+export default function ProposalScreen({ onAccept, onReject }: ProposalScreenProps) {
+  // Play a beautiful synthesizer sound effect using vanilla Web Audio API
+  const playSynthesizerSound = (type: "accept" | "sparkle") => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === "sparkle") {
+        // Star sparkle sound
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+        osc.type = "triangle";
+        osc.start();
+        osc.stop(ctx.currentTime + 0.12);
+      } else if (type === "accept") {
+        // Gentle romantic major chords (arpeggio sequence)
+        const playTone = (freq: number, start: number, duration: number) => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g);
+          g.connect(ctx.destination);
+          o.type = "sine";
+          o.frequency.setValueAtTime(freq, start);
+          g.gain.setValueAtTime(0.12, start);
+          g.gain.exponentialRampToValueAtTime(0.01, start + duration);
+          o.start(start);
+          o.stop(start + duration);
+        };
+        playTone(523.25, ctx.currentTime, 0.2); // C5
+        playTone(659.25, ctx.currentTime + 0.1, 0.2); // E5
+        playTone(783.99, ctx.currentTime + 0.2, 0.2); // G5
+        playTone(1046.50, ctx.currentTime + 0.3, 0.4); // C6
+      }
+    } catch (e) {
+      // Audio context might be blocked or unsupported; ignore silently
+    }
+  };
+
+  const handleYesAccept = () => {
+    playSynthesizerSound("accept");
+    onAccept();
+  };
+
+  return (
+    <div
+      id="proposal-container"
+      className="glass-panel relative w-full max-w-xl mx-auto min-h-[500px] rounded-[40px] p-8 md:p-12 flex flex-col justify-between items-center transition-all overflow-hidden"
+    >
+      {/* Top Banner Sparkle */}
+      <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 bg-white/40 rounded-full border border-white/60 animate-float z-10">
+        <Sparkles className="w-4 h-4 text-pink-500 animate-pulse" />
+        <span className="text-[11px] font-semibold text-pink-700 font-sans tracking-wide uppercase">
+          Pour toi, Doroh ✨
+        </span>
+      </div>
+
+      <div className="w-full mt-6" />
+
+      {/* Main Centered Cute Visual Graphic */}
+      <div className="flex flex-col items-center my-4 text-center select-none z-10">
+        <div className="relative w-32 h-32 flex items-center justify-center bg-white/30 rounded-full mb-6 border border-white/50 shadow-inner">
+          {/* Animated SVG beating heart */}
+          <div className="absolute animate-heartbeat text-pink-600">
+            <svg
+              className="fill-current filter drop-shadow-sm"
+              width="68"
+              height="68"
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          </div>
+          {/* Sparkles rotating around key design */}
+          <div className="absolute top-1 right-2 animate-spin" style={{ animationDuration: "10s" }}>
+            <Sparkles className="w-5 h-5 text-amber-500 opacity-80" />
+          </div>
+          <div className="absolute bottom-1 left-4 animate-pulse">
+            <Smile className="w-5 h-5 text-pink-500 opacity-80" />
+          </div>
+        </div>
+
+        {/* Written Proposal Title */}
+        <h1 className="text-5xl md:text-6xl font-bold font-serif-elegant text-pink-950 tracking-wide px-2 text-balance italic">
+          Doroh,
+        </h1>
+
+        <p className="mt-3 text-2xl md:text-3xl font-semibold text-slate-700 font-sans tracking-tight text-balance leading-tight">
+          Veux-tu devenir ma copine ?
+        </p>
+
+        <p className="mt-3 text-xs text-slate-500 font-medium font-sans max-w-sm">
+          Chaque jour passé avec toi est un si joli cadeau. Veux-tu continuer cette belle histoire à mes côtés ? 🌸
+        </p>
+      </div>
+
+      {/* Interactive Controls Panel (Standard, Side-By-Side Option buttons) */}
+      <div className="w-full flex justify-center items-center gap-6 max-w-sm px-4 mt-4 z-10">
+        {/* Yes Button */}
+        <button
+          id="yes-button"
+          onClick={handleYesAccept}
+          onMouseEnter={() => playSynthesizerSound("sparkle")}
+          className="flex-1 py-4 px-6 bg-gradient-to-br from-pink-600 to-rose-800 hover:from-pink-700 hover:to-rose-900 text-white font-bold rounded-2xl shadow-lg shadow-pink-500/20 border border-pink-400/20 hover:scale-105 active:scale-95 transition-all text-center text-lg flex items-center justify-center gap-2 cursor-pointer animate-pulse"
+        >
+          <Heart className="w-5 h-5 fill-white text-white animate-pulse" />
+          Oui ! ❤️
+        </button>
+
+        {/* No Button (Behaves normally, moves screen to Sad state immediately on click) */}
+        <button
+          id="no-button"
+          onClick={onReject}
+          className="flex-1 py-4 px-6 bg-white/60 hover:bg-white/80 hover:text-slate-800 text-slate-600 font-semibold rounded-2xl border border-white/80 hover:scale-105 active:scale-95 transition-all text-center text-lg cursor-pointer select-none"
+        >
+          Non 🥺
+        </button>
+      </div>
+
+      <div className="mt-6 text-[10px] text-pink-400 font-mono tracking-wider z-10 text-center">
+        POUR TOUJOURS &amp; À JAMAIS
+      </div>
+    </div>
+  );import React, { useState } from "react";
+import { HeartCrack, CloudRain, HelpCircle, Sparkles } from "lucide-react";
+
+interface SadScreenProps {
+  onRetry: () => void;
+}
+
+type WhyReasonId = "time" | "tease" | "error" | "other";
+
+export default function SadScreen({ onRetry }: SadScreenProps) {
+  const [selectedReason, setSelectedReason] = useState<WhyReasonId | null>(null);
+  const [customText, setCustomText] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  // Play a soft sad synthesizer note sequence using Web Audio API
+  const playMelancholyTune = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const playTone = (freq: number, start: number, duration: number, type: "sine" | "triangle" = "sine") => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.type = type;
+        o.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.08, start);
+        g.gain.exponentialRampToValueAtTime(0.001, start + duration);
+        o.start(start);
+        o.stop(start + duration);
+      };
+
+      // Soft sad minor interval
+      playTone(440, ctx.currentTime, 0.4, "sine"); // A4
+      playTone(523.25, ctx.currentTime + 0.3, 0.5, "sine"); // C5 (Minor third)
+      playTone(392, ctx.currentTime + 0.7, 0.8, "sine"); // G4
+    } catch (e) {
+      // safe bypass
+    }
+  };
+
+  React.useEffect(() => {
+    playMelancholyTune();
+  }, []);
+
+  const handleReasonSelect = (id: WhyReasonId) => {
+    setSelectedReason(id);
+    if (id !== "other") {
+      setSubmitted(true);
+    }
+  };
+
+  const handleCustomSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customText.trim()) {
+      setSubmitted(true);
+    }
+  };
+
+  const getReactionText = () => {
+    switch (selectedReason) {
+      case "time":
+        return "Prendre notre temps est une si belle idée. Chaque instant partagé est précieux, allons à ton rythme... 🌸";
+      case "tease":
+        return "Ahaha, petite joueuse ! Tu as réussi ton coup, mon cœur a fait un joli petit saut... 😜💖";
+      case "error":
+        return "Ouf ! Tu m'as fait une vraie frayeur ! Reviens vite réparer ça... 🥰👉👈";
+      case "other":
+        return "Merci de tout cœur d'avoir partagé cela avec moi, c'est précieux. 🌸";
+      default:
+        return "";
+    }
+  };
+
+  return (
+    <div className="glass-panel relative w-full max-w-xl mx-auto min-h-[580px] rounded-[40px] p-6 md:p-10 flex flex-col justify-between items-center transition-all overflow-hidden animate-fade-in">
+      {/* Top soft status */}
+      <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1 bg-white/40 rounded-full border border-white/60 z-10">
+        <HeartCrack className="w-4 h-4 text-slate-500 animate-pulse" />
+        <span className="text-[11px] font-semibold text-slate-600 font-sans tracking-wide uppercase">
+          Un petit nuage passe... 🌫️
+        </span>
+      </div>
+
+      <div className="w-full mt-6" />
+
+      {/* Main Centered Melancholy Content */}
+      <div className="flex flex-col items-center my-2 text-center select-none z-10 w-full">
+        {/* Sad Interactive Icon Box */}
+        {!submitted && (
+          <div className="relative w-24 h-24 flex items-center justify-center bg-slate-100/60 rounded-full mb-4 border border-slate-200/80 shadow-inner animate-bounce" style={{ animationDuration: "4s" }}>
+            <div className="absolute text-slate-400">
+              <HeartCrack className="w-12 h-12 stroke-[1.5]" />
+            </div>
+            <div className="absolute -top-1 -right-1">
+              <CloudRain className="w-5 h-5 text-slate-400 animate-pulse" />
+            </div>
+          </div>
+        )}
+
+        {/* Soft, humble healing copy */}
+        <h1 className="text-3xl md:text-4xl font-bold font-serif-elegant text-slate-800 tracking-wide px-2 italic">
+          Oh... 🥺
+        </h1>
+
+        <p className="mt-2 text-lg md:text-xl font-medium text-slate-600 font-sans tracking-tight text-balance leading-relaxed px-4">
+          Mon petit cœur a eu un tout petit frisson de tristesse...
+        </p>
+
+        {/* Dynamic Interactive "Why" Panel */}
+        <div className="w-full max-w-md mt-6 bg-white/30 border border-white/50 rounded-2xl p-4 text-left shadow-inner">
+          <h3 className="text-xs font-bold text-slate-700 font-sans uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <HelpCircle className="w-4 h-4 text-slate-500" />
+            Est-ce que je peux te demander pourquoi ? 👉👈
+          </h3>
+
+          {!submitted ? (
+            <div className="space-y-2">
+              <button
+                id="reason-time"
+                onClick={() => handleReasonSelect("time")}
+                className="w-full text-left p-3 text-xs md:text-sm bg-white/50 hover:bg-white/80 active:scale-[0.98] border border-white/60 rounded-xl font-medium text-slate-700 transition-all flex justify-between items-center cursor-pointer"
+              >
+                <span>Je préfère qu&apos;on prenne notre temps 🕊️</span>
+                <ChevronRightChar />
+              </button>
+
+              <button
+                id="reason-tease"
+                onClick={() => handleReasonSelect("tease")}
+                className="w-full text-left p-3 text-xs md:text-sm bg-white/50 hover:bg-white/80 active:scale-[0.98] border border-white/60 rounded-xl font-medium text-slate-700 transition-all flex justify-between items-center cursor-pointer"
+              >
+                <span>Histoire de te faire languir un petit peu... 😜</span>
+                <ChevronRightChar />
+              </button>
+
+              <button
+                id="reason-error"
+                onClick={() => handleReasonSelect("error")}
+                className="w-full text-left p-3 text-xs md:text-sm bg-white/50 hover:bg-white/80 active:scale-[0.98] border border-white/60 rounded-xl font-medium text-slate-700 transition-all flex justify-between items-center cursor-pointer"
+              >
+                <span>Oups, j&apos;ai cliqué par erreur ! 🤭</span>
+                <ChevronRightChar />
+              </button>
+
+              <button
+                id="reason-other"
+                onClick={() => handleReasonSelect("other")}
+                className={`w-full text-left p-3 text-xs md:text-sm bg-white/50 hover:bg-white/80 border border-white/60 rounded-xl font-medium text-slate-700 transition-all flex justify-between items-center cursor-pointer ${selectedReason === "other" ? "bg-white/80 ring-2 ring-pink-300" : ""}`}
+              >
+                <span>Autre chose... ✏️</span>
+                <ChevronRightChar />
+              </button>
+
+              {selectedReason === "other" && (
+                <form onSubmit={handleCustomSubmit} className="mt-2.5 flex gap-2 animate-fade-in">
+                  <input
+                    id="why-custom-input"
+                    type="text"
+                    required
+                    value={customText}
+                    onChange={(e) => setCustomText(e.target.value)}
+                    placeholder="Dis-moi pourquoi avec douceur..."
+                    className="flex-1 px-3 py-2 bg-white/80 border border-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-300 font-sans text-slate-800 placeholder-slate-400"
+                  />
+                  <button
+                    id="submit-why-btn"
+                    type="submit"
+                    className="px-4 py-2 bg-slate-700 text-white font-bold rounded-xl text-xs hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+                  >
+                    Valider
+                  </button>
+                </form>
+              )}
+            </div>
+          ) : (
+            <div className="p-3 bg-pink-50/45 border border-pink-100 rounded-xl text-slate-700 text-sm font-sans italic leading-relaxed animate-fade-in flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-pink-400 shrink-0 mt-0.5 animate-pulse" />
+              <span>{getReactionText()}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Friendly message at the end (No go back buttons as requested) */}
+      <div className="w-full flex flex-col items-center gap-3 mt-4 z-10">
+        <span className="text-[10px] text-slate-400 font-mono tracking-wider">
+          L&apos;AMITIÉ ET LA DOUCEUR RESTENT INTACTES
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ChevronRightChar() {
+  return <span className="text-[10px] bg-white/80 px-1.5 py-0.5 rounded text-slate-400 font-semibold font-mono">▶</span>;
+}
+}
+  );
+}
